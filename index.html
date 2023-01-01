@@ -1,0 +1,398 @@
+<head>
+
+</head>
+<script src="https://cdn.jsdelivr.net/npm/tone@14.7.77/build/Tone.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@tonejs/midi@2.0.28/build/Midi.min.js"></script>
+<script src="https://unpkg.com/@tonejs/piano@0.1.3/build/Piano.js"></script>
+
+<script defer>
+    window.onload = () => {
+        const inputElement = document.getElementById("input_balls");
+        inputElement.addEventListener('input', function (event) {
+            // The `event.target.value` property contains the current value of the input element.
+            const inputValue = event.target.value;
+
+            // The `inputValue` letiable contains the newly input character.
+            // You can pass it to a callback function here.
+
+            if (inputValue[inputValue.length - 1] != ' ') {
+                blues()
+            }
+
+
+        });
+
+
+
+    }
+
+
+</script>
+
+
+<div
+    style="width: 100%; height: 100%; display: flex; justify-content: center; align-items: center; flex-wrap: wrap; flex-direction: column;">
+    <h1 style="width: 100%; text-align: center; max-height: fit-content; margin: 0"> Jazz Typer v1.0 🎹</h1>
+    <p style="width: 100%; text-align: center; max-height: fit-content;"> Type some words - music is generated randomly
+        according to your input in
+        a <i>C Minor Blues
+            Scale </i> </p>
+    <input style="width: 40%; height: 60px; max-height: fit-content;" id="input_balls" type="text"> </input>
+    <!-- <input id="input" type="text" oninput="backingTrack()"> </input> -->
+</div>
+
+
+<script defer>
+    let currentNoteIndex = 0;
+    let direction_up = true;
+    let count = 0;
+    let lickIndex = 0;
+
+    const vol = new Tone.Volume(30).toDestination();
+
+
+    function getNumberFromEnd(str) {
+        const match = str.match(/\d+$/);
+        if (match) {
+            return { rawstring: str.slice(0, -match[0].length), int: parseInt(match[0]) };
+        }
+        return { rawstring: str, int: 0 };
+    }
+
+    const licks = {
+        "F": {
+            notes: ["F", ["F", "Gb"], "F", "Eb", "C", "F"]
+        },
+        "Gb": {
+            notes: ["Gb", "G", "C1", "Gb", "G", "C1", "Gb", "G", "C1", "Gb", "G", "C1"],
+        },
+
+    }
+
+    let array = [
+
+        'C4',
+        'Eb4',
+        'F4',
+        'Gb4',
+        'G4',
+        'Bb4',
+        'C5',
+        'Eb5',
+        'F5',
+        'Gb5',
+        'G5',
+        'Bb5',
+        'C6',
+    ]
+
+    let array_slowed = [
+        "C2",
+        "E2",
+        "G2",
+        "B2",
+        "D3",
+        "E3",
+        "G3",
+        "B3",
+        "D4",
+    ];
+
+    const sampler = new Tone.Sampler({
+        urls: {
+            A0: "A0.mp3",
+            C1: "C1.mp3",
+            "D#1": "Ds1.mp3",
+            "F#1": "Fs1.mp3",
+            A1: "A1.mp3",
+            C2: "C2.mp3",
+            "D#2": "Ds2.mp3",
+            "F#2": "Fs2.mp3",
+            A2: "A2.mp3",
+            C3: "C3.mp3",
+            "D#3": "Ds3.mp3",
+            "F#3": "Fs3.mp3",
+            A3: "A3.mp3",
+            C4: "C4.mp3",
+            "D#4": "Ds4.mp3",
+            "F#4": "Fs4.mp3",
+            A4: "A4.mp3",
+            C5: "C5.mp3",
+            "D#5": "Ds5.mp3",
+            "F#5": "Fs5.mp3",
+            A5: "A5.mp3",
+            C6: "C6.mp3",
+            "D#6": "Ds6.mp3",
+            "F#6": "Fs6.mp3",
+            A6: "A6.mp3",
+            C7: "C7.mp3",
+            "D#7": "Ds7.mp3",
+            "F#7": "Fs7.mp3",
+            A7: "A7.mp3",
+            C8: "C8.mp3"
+        },
+
+        // Cela règle la durée de permanence des notes jouées
+        release: 10,
+
+        // Source locale des sons
+        // baseUrl: "./audio/salamander/"
+
+        baseUrl: "https://tonejs.github.io/audio/salamander/"
+    }).toDestination();
+
+    let midi = new Midi("pls.mid");
+
+
+
+    // define global letiables
+    // array of notes
+
+    function play(note) {
+        // appVol = tone.volume()
+        // appVol.volume.value = 0
+
+
+
+
+        let synth = new Tone.PolySynth().toDestination();
+
+
+        let chords = [
+            ["C2", "C3"],
+            ["Bb1", "Bb2"],
+            ["Ab1", "Ab2"],
+            ["G1", "G2"],
+        ]
+
+        //on every fourth count play the chord starting from the first chord in the array
+        if (count % 16 == 0) {
+            //get the current chord
+            let currentChord = chords[count / 16 % chords.length];
+            //play the chord
+            synth.triggerAttackRelease(currentChord, '1');
+        }
+
+
+        //check if note is a chord
+        if (note instanceof Array) {
+            let now = Tone.now();
+            note.forEach((element) => {
+                synth.triggerAttackRelease(element, '0.1');
+            });
+        } else {
+            synth.triggerAttackRelease(note, '0.1');
+        }
+
+    }
+
+    function playPiano(note) {
+
+
+        sampler.triggerAttackRelease(note, '0.01n', 0.01);
+
+
+    }
+
+    function blues() {
+        // let synth = new Tone.Synth().toMaster();
+
+        var finalnote;
+
+        if (lickIndex == 0) { //we are not in the middle of a lick
+            if (currentNoteIndex <= 0) direction_up = true;
+            if (currentNoteIndex >= array.length - 1) direction_up = false;
+
+            let interval = Math.floor(Math.random() * 2);
+
+            currentNoteIndex = (direction_up) ? currentNoteIndex + interval : currentNoteIndex - interval;
+            currentNote = array[currentNoteIndex];
+
+
+            let octave = parseInt(currentNote.substr(currentNote.length - 1, currentNote.length))  //get the octave of the current note 
+            let note = currentNote.slice(0, -1) // get the note of the current note
+
+            finalNote = currentNote;
+
+            if (note in licks && Math.random() < 0.2) { //our chosen note is in a lick and we get 20% probability of playing a lick
+                lickArray = licks[note].notes;
+
+                if (lickArray[lickIndex] instanceof Array) { //we have a chord
+                    finalNote = lickArray[lickIndex].slice();
+                    finalNote.forEach(function (part, index) {
+                        lickArray[index] = parseInt(lickArray[index]) + parseInt(octave);
+                    });
+                } else { //we have a single note
+                    finalNote = lickArray[lickIndex] + octave;
+                }
+                ++lickIndex;
+            }
+
+            console.log(finalNote)
+            console.log(direction_up)
+            console.log(interval)
+
+        } else if (lickIndex > 0) { //we are in the middle of a lick and we do not modify currentNote
+
+            let octave = parseInt(currentNote.substr(currentNote.length - 1, currentNote.length)) //get the octave of the current note
+            let note = currentNote.slice(0, -1) // get the note of the current note
+
+            lickArray = licks[note].notes;
+
+
+
+            if (lickArray[lickIndex] instanceof Array) { //we have a chord
+                finalNote = lickArray[lickIndex].slice();
+                finalNote.forEach(function (part, index) {
+                    let obj = getNumberFromEnd(finalNote[index]);
+                    console.log(parseInt(octave))
+                    octave = parseInt(octave) + parseInt(obj.int);
+                    finalNote[index] = obj.rawstring + octave;
+
+                });
+
+            } else { //we have a single note
+                let obj = getNumberFromEnd(lickArray[lickIndex]);
+
+                octave = parseInt(octave) + parseInt(obj.int);
+                console.log(parseInt(octave))
+                console.log(lickArray[lickIndex])
+                finalNote = obj.rawstring + octave;
+            }
+
+            if (lickIndex >= lickArray.length - 1) {
+                lickIndex = 0;
+                currentNoteIndex = array.indexOf(finalNote); //LAST NOTE CANNOT BE OF ARRAY TYPE
+            } else {
+                ++lickIndex;
+            }
+
+            console.log("currently in Lick:")
+            console.log(finalNote)
+        }
+
+
+        play(finalNote)
+        // playPiano(finalNote)
+
+
+        ++count;
+    }
+
+
+    function backingTrack() {
+        const synth = new Tone.PolySynth(Tone.Synth).toDestination();
+        const now = Tone.now()
+        synth.triggerAttack("C2", now);
+        synth.triggerAttack("E2", now + 0.5);
+        synth.triggerAttack("G2", now + 1);
+        synth.triggerAttack("B2", now + 1.5);
+        synth.triggerAttack("D3", now + 2);
+    }
+
+
+    function balls2() {
+        const synth = new Tone.PolySynth(Tone.Synth).toDestination();
+
+        if (currentNoteIndex <= 0) direction_up = true;
+        if (currentNoteIndex >= array.length - 1) direction_up = false;
+
+        currentNoteIndex = (direction_up) ? currentNoteIndex + 1 : currentNoteIndex - 1;
+
+        play(array[currentNoteIndex])
+    }
+
+    function hold() {
+        const synth = new Tone.PolySynth(Tone.Synth).toDestination();
+
+        if (currentNoteIndex <= 0) direction_up = true;
+        if (currentNoteIndex >= array.length - 1) direction_up = false;
+
+        currentNoteIndex = (direction_up) ? currentNoteIndex + 1 : currentNoteIndex - 1;
+        let now = Tone.now()
+
+        console.log(array_slowed[currentNoteIndex])
+        synth.triggerAttack(array_slowed[currentNoteIndex], now);
+
+    }
+
+    function piano() {
+        const sampler = new Tone.Sampler({
+            urls: {
+                A0: "A0.mp3",
+                C1: "C1.mp3",
+                "D#1": "Ds1.mp3",
+                "F#1": "Fs1.mp3",
+                A1: "A1.mp3",
+                C2: "C2.mp3",
+                "D#2": "Ds2.mp3",
+                "F#2": "Fs2.mp3",
+                A2: "A2.mp3",
+                C3: "C3.mp3",
+                "D#3": "Ds3.mp3",
+                "F#3": "Fs3.mp3",
+                A3: "A3.mp3",
+                C4: "C4.mp3",
+                "D#4": "Ds4.mp3",
+                "F#4": "Fs4.mp3",
+                A4: "A4.mp3",
+                C5: "C5.mp3",
+                "D#5": "Ds5.mp3",
+                "F#5": "Fs5.mp3",
+                A5: "A5.mp3",
+                C6: "C6.mp3",
+                "D#6": "Ds6.mp3",
+                "F#6": "Fs6.mp3",
+                A6: "A6.mp3",
+                C7: "C7.mp3",
+                "D#7": "Ds7.mp3",
+                "F#7": "Fs7.mp3",
+                A7: "A7.mp3",
+                C8: "C8.mp3"
+            },
+
+            // Cela règle la durée de permanence des notes jouées
+            release: 10,
+
+            // Source locale des sons
+            // baseUrl: "./audio/salamander/"
+
+            baseUrl: "https://tonejs.github.io/audio/salamander/"
+        }).toDestination();
+
+        piano({
+            parent: document.querySelector("#content"),
+            noteon: note => sampler.triggerAttack(note.name),
+            noteoff: note => sampler.triggerRelease(note.name),
+
+        });
+
+        // Pour ajouter des effets...
+        // Exemples..
+        // const filter = new Tone.AutoFilter(4).start();
+        // const distortion = new Tone.Distortion(0.5);
+
+        const reverb = new Tone.Reverb(10);
+
+        // connect the player to the filter, distortion and then to the master output
+        // sampler.chain(filter, distortion, reverb, Tone.Destination);
+
+        sampler.chain(reverb, Tone.Destination);
+
+
+
+
+        if (currentNoteIndex <= 0) direction_up = true;
+        if (currentNoteIndex >= array.length - 1) direction_up = false;
+
+        currentNoteIndex = (direction_up) ? currentNoteIndex + 1 : currentNoteIndex - 1;
+        let now = Tone.now()
+
+        console.log(array_slowed[currentNoteIndex])
+
+
+    }
+
+
+
+</script>
